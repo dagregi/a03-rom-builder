@@ -1,0 +1,184 @@
+name: ROM Builder For Samsung Galaxy A03
+
+permissions:
+    contents: write
+
+on:
+    push:
+        branches:
+            - main
+            - master
+    workflow_dispatch:
+        inputs:
+            GSI:
+                description: "GSI Image Download Link"
+                required: true
+                default: "https://github.com/cawilliamson/treble_voltage/releases/download/4.5-20250717.114637/VoltageOS-microg-arm64-ab-4.5-20250717.114637-UNOFFICIAL.img.xz"
+                type: string
+            NAME:
+                description: "ROM Name"
+                required: true
+                default: "VoltageOS-arm64-ab-microg-15.0-a03.7z"
+                type: string
+            VERSION:
+                description: "Baseband Version"
+                required: true
+                default: "A035FXXF8CYA3"
+                type: string
+            VENDOR:
+                description: "Vendor Image Download Link"
+                required: true
+                default: "https://sourceforge.net/projects/a03-files/files/A035FXXU4CWI1/vendor.img"
+                type: string
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        timeout-minutes: 120
+
+        steps:
+            - name: Maximize build space
+              uses: easimon/maximize-build-space@master
+              with:
+                  root-reserve-mb: 512
+                  swap-size-mb: 1024
+                  remove-dotnet: "true"
+                  remove-android: "true"
+                  remove-haskell: "true"
+                  remove-codeql: "true"
+
+            - name: Checkout Repository
+              uses: actions/checkout@v4
+
+            - name: Free up disk space
+              run: |
+                  sudo rm -rf /usr/share/dotnet
+                  sudo rm -rf /opt/ghc
+                  sudo rm -rf "/usr/local/share/boost"
+                  sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+                  df -h
+
+            - name: Install Dependencies
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y zip xz-utils unzip p7zip-full wget curl
+
+            - name: Clone LP Tools
+              run: |
+                  git clone https://github.com/Exynos-nigg/lpunpack-lpmake-mirror.git lpbinary
+                  chmod +x lpbinary/binary/lpmake
+
+            - name: Download and Extract GSI
+              run: |
+                  cd lpbinary/binary
+                  wget -q --show-progress "${{ github.event.inputs.GSI }}" -O gsi_image.img.xz
+                  echo "Extracting GSI..."
+                  xz -d gsi_image.img.xz
+                  mv gsi_image.img system.img
+
+            - name: Download Required Images
+              run: |
+                  cd lpbinary/binary
+                  echo "Downloading vendor image..."
+                  wget -q --show-progress "${{ github.event.inputs.VENDOR }}" -O vendor.img
+
+                  echo "Downloading product image..."
+                  wget -q --show-progress "https://sourceforge.net/projects/a03-files/files/product.img" -O product.img
+
+                  echo "Downloading system_ext image..."
+                  wget -q --show-progress "https://sourceforge.net/projects/a03-files/files/system_ext.img" -O system_ext.img
+
+            - name: Verify Images
+              run: |
+                  cd lpbinary/binary
+                  for img in system.img vendor.img product.img system_ext.img; do
+                    if [ ! -f "$img" ]; then
+                      echo "Error: $img not found!"
+                      exit 1
+                    fi
+                  done
+
+            - name: Create Super Image
+              run: |
+                  cd lpbinary/binary
+
+                  SYSTEM_SIZE=$(stat -c%s system.img)
+                  VENDOR_SIZE=$(stat -c%s vendor.img)
+                  PRODUCT_SIZE=$(stat -c%s product.img)
+                  SYSTEM_EXT_SIZE=$(stat -c%s system_ext.img)
+
+                  ./lpmake --metadata-size 65536 \
+                           --super-name super \
+                           --metadata-slots 2 \
+                           --device super:6763315200 \
+                           --group main:6761218048 \
+                           --partition system:readonly:${SYSTEM_SIZE}:main \
+                           --image system=system.img \
+                           --partition vendor:readonly:${VENDOR_SIZE}:main \
+                           --image vendor=vendor.img \
+                           --partition product:readonly:${PRODUCT_SIZE}:main \
+                           --image product=product.img \
+                           --partition system_ext:readonly:${SYSTEM_EXT_SIZE}:main \
+                           --image system_ext=system_ext.img \
+                           --sparse \
+                           --output super.img
+
+                  echo "Super image created successfully!"
+
+            - name: Package ROM
+              run: |
+                  cd lpbinary/binary
+                  echo "Creating tar archive..."
+                  tar -cf super.tar super.img
+
+                  echo "Compressing to 7z..."
+                  7z a -t7z -mx=9 "${{ github.event.inputs.NAME }}" super.tar
+
+                  rm -f super.img super.tar
+                  echo "Final ROM package:"
+
+            - name: Generate Release Notes
+              id: release_notes
+              run: |
+                  cat << EOF > release_notes.md
+                  ## Samsung Galaxy A03 Custom ROM
+
+                  **Device Information:**
+                  - Device: Samsung Galaxy A03 (SM-A035F)
+                  - Baseband Version: ${{ github.event.inputs.VERSION }}
+                  - ROM Name: ${{ github.event.inputs.NAME }}
+
+                  **Build Information:**
+                  - Built on: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+                  - Workflow Run: #${{ github.run_number }}
+
+                  **Source Images:**
+                  - GSI: ${{ github.event.inputs.GSI }}
+                  - Vendor: ${{ github.event.inputs.VENDOR }}
+
+                  **Installation Instructions:**
+                  1. Download the ROM file
+                  2. Extract the 7z archive
+                  3. Flash using Odin, Heimdall or similar tool
+                  4. Reboot and enjoy :)
+
+                  **Warning:** Flash at your own risk. Make sure to backup your device before flashing.
+                  EOF
+
+            - name: Upload ROM to Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  files: lpbinary/binary/${{ github.event.inputs.NAME }}
+                  name: "${{ github.event.inputs.NAME }} - Build #${{ github.run_number }}"
+                  tag_name: "build-${{ github.run_number }}-${{ github.run_id }}"
+                  body_path: release_notes.md
+                  draft: false
+                  prerelease: false
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Clean up
+              if: always()
+              run: |
+                  rm -rf lpbinary/
+                  df -h
