@@ -18,7 +18,7 @@ on:
             NAME:
                 description: "ROM Name"
                 required: true
-                default: "VoltageOS-arm64-ab-microg-15.0-a03.7z"
+                default: "VoltageOS-arm64-ab-microg-4.5-a03.7z"
                 type: string
             VERSION:
                 description: "Baseband Version"
@@ -28,7 +28,7 @@ on:
             VENDOR:
                 description: "Vendor Image Download Link"
                 required: true
-                default: "https://sourceforge.net/projects/a03-files/files/A035FXXU4CWI1/vendor.img"
+                default: "https://download937.mediafire.com/56f7fw8r15zgAmSxXwQu15MKxt4OIOi3Sl3SwwzIxpQpYxcDtqQTdVPy_K5mMrGTHvOguGmisZi9HBzNiCkgse_r_bR92O9W-1ypUx90dFK1DN6iqyAOEVB2usGGn0Benoe_3bu5HkPNzZQ44JzZlS6VOtX9K89dCmhaTFwon9jpyLbm/dvjvj8sghw16dte/vendor.img"
                 type: string
 
 jobs:
@@ -83,10 +83,10 @@ jobs:
                   wget -q --show-progress "${{ github.event.inputs.VENDOR }}" -O vendor.img
 
                   echo "Downloading product image..."
-                  wget -q --show-progress "https://sourceforge.net/projects/a03-files/files/product.img" -O product.img
+                  wget -q --show-progress "https://download1075.mediafire.com/a7x2os6afokgCyH51sKSN14ceKZDbpw2Q4PWbYVPksvKYKzmlf7C6lmZND2qnw-p6Ia_n756nrWcC9AdxiY-wNE8XA4D-7IsWHvtXXAOti784ppU_oACNUXpyd9qShb0r-KgDIiToTbXRcdjpODuKwylJDo3YGTmlTTLD6lrgrqyz5w/dkbxtwremcfjclm/product.img" -O product.img
 
                   echo "Downloading system_ext image..."
-                  wget -q --show-progress "https://sourceforge.net/projects/a03-files/files/system_ext.img" -O system_ext.img
+                  wget -q --show-progress "https://download1589.mediafire.com/d342347mxalgMCfdx08pLls5z2f5UEEc6ZFupAsDoQIfQD6GNRvbDEVaDo7UEN8OUzdtLVanx05fdO64KiRoBExYtUXk8xnqBoCYuo_27X4pPkE7HSnEI0y-3mQ1IAVaBEaaYp8-BlYb9MnWPE7fumD2U9izrI2W11RvPLSBcC0rY0k/8hr8j4g15jqzalj/system_ext.img" -O system_ext.img
 
             - name: Verify Images
               run: |
@@ -161,6 +161,8 @@ jobs:
                   2. Extract the 7z archive
                   3. Flash using Odin, Heimdall or similar tool
                   4. Reboot and enjoy :)
+
+                  **NOTE:** If you're not receiving SMS after flashing you can use this magisk [module](https://github.com/IverCoder/a03nnxx-ril-rollback) to fix it.
 
                   **Warning:** Flash at your own risk. Make sure to backup your device before flashing.
                   EOF
