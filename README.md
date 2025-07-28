@@ -10,7 +10,7 @@ This repo is used to build custom ROMs for the Samsung Galaxy A03 (SM-A035F), it
 2. **Click on "ROM Builder For Samsung Galaxy A03"** workflow
 3. **Click "Run workflow"** button
 4. **Fill in the parameters**:
-    - **GSI Image Download Link**: Direct download link to your GSI (supports .xz, .tar.xz, .zip, .7z formats)
+    - **GSI Image Download Link**: Direct download link to your GSI
     - **ROM Name**: Output filename (e.g., `VoltageOS-arm64-ab-microg-15.0-a03.7z`)
     - **Baseband Version**: Your device's baseband version (find in Settings > About phone)
     - **Vendor Image Download Link**: Direct download link to vendor.img for your baseband

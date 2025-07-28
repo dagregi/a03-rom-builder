@@ -16,11 +16,6 @@ on:
                 required: true
                 default: "VoltageOS-arm64-ab-microg-4.5-a03.7z"
                 type: string
-            VERSION:
-                description: "Baseband Version"
-                required: true
-                default: "A035FXXF8CYA3"
-                type: string
             VENDOR:
                 description: "Vendor Image Download Link"
                 required: true
@@ -33,27 +28,6 @@ jobs:
         timeout-minutes: 120
 
         steps:
-            - name: Maximize build space
-              uses: easimon/maximize-build-space@master
-              with:
-                  root-reserve-mb: 512
-                  swap-size-mb: 1024
-                  remove-dotnet: "true"
-                  remove-android: "true"
-                  remove-haskell: "true"
-                  remove-codeql: "true"
-
-            - name: Checkout Repository
-              uses: actions/checkout@v4
-
-            - name: Free up disk space
-              run: |
-                  sudo rm -rf /usr/share/dotnet
-                  sudo rm -rf /opt/ghc
-                  sudo rm -rf "/usr/local/share/boost"
-                  sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-                  df -h
-
             - name: Install Dependencies
               run: |
                   sudo apt-get update
@@ -69,7 +43,12 @@ jobs:
                   cd lpbinary/binary
                   wget -q --show-progress "${{ github.event.inputs.GSI }}" -O gsi_image
                   echo "Extracting GSI..."
-                  atool --format=$(file -b gsi_image | awk '{print $1}') --extract gsi_image
+                  FILE_TYPE=$(file -b gsi_image | awk '{print $1}')
+                  if [[ "$FILE_TYPE" == 7-zip ]]; then
+                    atool --format=7z --extract gsi_image
+                  else
+                    atool --format=$FILE_TYPE --extract gsi_image
+                  fi
                   IMG_FILE=$(find . -name "*.img" -type f | head -1)
                   if [ -z "$IMG_FILE" ]; then
                     echo "Error: No .img file found after extraction!"
@@ -146,7 +125,6 @@ jobs:
                   cat << EOF > release_notes.md
                   **Device Information:**
                   - Device: Samsung Galaxy A03 (SM-A035F)
-                  - Baseband Version: ${{ github.event.inputs.VERSION }}
                   - [GSI](${{ github.event.inputs.GSI }})
 
                   **Installation Instructions:**
