@@ -102,5 +102,5 @@ SYSTEM_EXT_SIZE=$(stat -c%s system_ext.img)
 
 ## Credits
 
-[Johx22](https://github.com/Johx22/) - for the patch recovery script
-[antyrix](https://github.com/antyrix/) - for the original idea and inspiration
+- [Johx22](https://github.com/Johx22/) - for the patch recovery script
+- [antyrix](https://github.com/antyrix/) - for the original idea and inspiration
