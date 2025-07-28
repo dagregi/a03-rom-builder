@@ -128,7 +128,7 @@ jobs:
                   tar -cf super.tar super.img
 
                   echo "Compressing to 7z..."
-                  7z a -t7z -mx=9 "${{ github.event.inputs.NAME }}" super.tar
+                  7z a -t7z -mx=3 "${{ github.event.inputs.NAME }}" super.tar
 
                   rm -f super.img super.tar
                   echo "Final ROM package:"
@@ -137,20 +137,10 @@ jobs:
               id: release_notes
               run: |
                   cat << EOF > release_notes.md
-                  ## Samsung Galaxy A03 Custom ROM
-
                   **Device Information:**
                   - Device: Samsung Galaxy A03 (SM-A035F)
                   - Baseband Version: ${{ github.event.inputs.VERSION }}
-                  - ROM Name: ${{ github.event.inputs.NAME }}
-
-                  **Build Information:**
-                  - Built on: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
-                  - Workflow Run: #${{ github.run_number }}
-
-                  **Source Images:**
-                  - GSI: ${{ github.event.inputs.GSI }}
-                  - Vendor: ${{ github.event.inputs.VENDOR }}
+                  - [GSI](${{ github.event.inputs.GSI }})
 
                   **Installation Instructions:**
                   1. Download the ROM file
