@@ -57,7 +57,7 @@ jobs:
             - name: Install Dependencies
               run: |
                   sudo apt-get update
-                  sudo apt-get install -y zip xz-utils unzip p7zip-full wget curl
+                  sudo apt-get install -y zip xz-utils unzip p7zip-full wget curl atool
 
             - name: Clone LP Tools
               run: |
@@ -67,10 +67,17 @@ jobs:
             - name: Download and Extract GSI
               run: |
                   cd lpbinary/binary
-                  wget -q --show-progress "${{ github.event.inputs.GSI }}" -O gsi_image.img.xz
+                  wget -q --show-progress "${{ github.event.inputs.GSI }}" -O gsi_image
                   echo "Extracting GSI..."
-                  xz -d gsi_image.img.xz
-                  mv gsi_image.img system.img
+                  atool --format=$(file -b gsi_image | awk '{print $1}') --extract gsi_image
+                  IMG_FILE=$(find . -name "*.img" -type f | head -1)
+                  if [ -z "$IMG_FILE" ]; then
+                    echo "Error: No .img file found after extraction!"
+                    ls -la
+                    exit 1
+                  fi
+
+                  mv "$IMG_FILE" system.img
 
             - name: Download Required Images
               run: |
